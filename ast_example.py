@@ -1,26 +1,25 @@
 import ast
-from pprint import pprint
-from flask import request
-from pypi_simple import PyPISimple
-from piptools.scripts.compile import cli
 import sys
 import re
-from platform import python_version
-from stdlib_list import stdlib_list
 import glob
 import os
+from pypi_simple import PyPISimple
+from piptools.scripts.compile import cli
+from platform import python_version
+from stdlib_list import stdlib_list
 
-
-def get_python_files(abs_path: str) -> list[str]:
+def get_python_files(abs_path: str) -> list:
     """:arg
     path_arg: absolute directory of the code base
     return a list of paths that are organic to the code base
     """
-    dep_paths = "/".join([abs_path, "**/site-packages/**/*.py"])
-    all_paths = "/".join([abs_path, "**/*.py"])
+    dep_paths_pattern = "/".join([abs_path, "**/[site-packages|node_modules]/**/*.py"])
+    all_paths_pattern = "/".join([abs_path, "**/*.py"])
+    dep_paths = glob.glob(dep_paths_pattern, recursive=True)
+    all_paths = glob.glob(all_paths_pattern, recursive=True)
 
     organic_paths = list(set(all_paths) - set(dep_paths))
-
+    print(organic_paths)
     return organic_paths
 
 
@@ -34,6 +33,10 @@ def get_builtin_libs(python_version: str) -> set:
 
 
 def generate_requirements_file(import_list: list, dest_file):
+    if not os.path.exists(dest_file):
+        with open(dest_file, 'w'):
+            pass
+
     vers = ".".join(python_version().split(".")[:-1])
     builtin_lst = get_builtin_libs(vers)
     non_builtin_lst = list(set(import_list).difference(builtin_lst))
@@ -41,31 +44,39 @@ def generate_requirements_file(import_list: list, dest_file):
     client = PyPISimple()
     pip_package_list = sorted([pkg for pkg in non_builtin_lst if client.get_project_files(pkg) != []])
 
-    with open("requirements.in", 'w') as f:
+    with open(dest_file, 'w') as f:
         for pkg in pip_package_list:
             f.write(f"{pkg}\n")
 
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-    exit_code = cli()
-    os.remove("requirements.in")
-    sys.exit(exit_code)
+
+    # Need to change the args before running pip-compile
+    sys.argv = ["", dest_file]
+    cli()
+
 
 def main():
     assert len(sys.argv) == 3, "[USAGE]: Ensure you provide 2 arguments " \
                                "<directory of codebase> <filepath for requirements>"
 
+    if not os.path.isabs(sys.argv[1]):
+        abs_path = os.path.abspath(sys.argv[1])
+    else:
+        abs_path = sys.argv[1]
 
-    with open("ast_example.py", "r") as source:
-        tree = ast.parse(source.read())
-
+    requirements_file = sys.argv[2]
+    files = get_python_files(abs_path)
     analyzer = Analyzer()
-    analyzer.visit(tree)
+
+    for file in files:
+        print(f"Analyzing File: {file}")
+        with open(file, "r") as source:
+            tree = ast.parse(source.read())
+            analyzer.visit(tree)
+
     import_list = analyzer.report()
 
-    if not os.path.isabs(sys.argv[1]):
-        path = os.path.abspath(sys.argv[1])
-
-    generate_requirements_file(import_list, "requirements.txt")
+    generate_requirements_file(import_list, requirements_file)
 
 
 """
