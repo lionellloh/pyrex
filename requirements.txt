@@ -4,16 +4,8 @@
 #
 #    pip-compile requirements.txt
 #
-conlleval==0.2            # via -r requirements.txt
-future==0.18.2            # via torch
-numpy==1.19.1             # via -r requirements.txt, pandas, scipy, torch, torchvision
-pandas==1.1.1             # via -r requirements.txt
-pillow==7.2.0             # via torchvision
-python-dateutil==2.8.1    # via pandas
-pytz==2020.1              # via pandas
-scipy==1.5.2              # via -r requirements.txt
-six==1.15.0               # via python-dateutil
-torch==1.6.0              # via -r requirements.txt, torchvision
-torchvision==0.7.0        # via -r requirements.txt
-tqdm==4.48.2              # via -r requirements.txt
-utils==1.0.1              # via -r requirements.txt
+backrefs==4.5             # via wcmatch
+bracex==2.0.1             # via wcmatch
+piptools==0.1.1           # via -r requirements.txt
+stdlib-list==0.7.0        # via -r requirements.txt
+wcmatch==7.1              # via -r requirements.txt
