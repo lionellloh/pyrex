@@ -2,6 +2,7 @@ import ast
 import sys
 import re
 import os
+import json
 import importlib
 from collections import defaultdict
 
@@ -39,8 +40,13 @@ def flatten_nested_lst(nested_lst: list) -> list:
 
     return ret
 
+def apply_mapping(import_list:list, mapping_dict:dict) -> list:
+    pip_pkg_list = [mapping_dict.get(imp, imp) for imp in import_list]
 
-def generate_requirements_file(import_mapping: dict, dest_file: str, code_dir_abs_path: str):
+    return pip_pkg_list
+
+
+def generate_requirements_file(import_mapping: dict, dest_file: str, code_dir_abs_path: str, mapping_dict:dict):
     if not os.path.exists(dest_file):
         with open(dest_file, 'w'):
             pass
@@ -90,6 +96,7 @@ def generate_requirements_file(import_mapping: dict, dest_file: str, code_dir_ab
 
     client = PyPISimple()
     pip_package_list = sorted([pkg for pkg in non_builtin_lst if client.get_project_files(pkg) != []])
+    pip_package_list = apply_mapping(pip_package_list, mapping_dict)
 
     with open(dest_file, 'w') as f:
         for pkg in pip_package_list:
@@ -105,6 +112,9 @@ def generate_requirements_file(import_mapping: dict, dest_file: str, code_dir_ab
 
 
 def main():
+    assert len(sys.argv) == 3, "[USAGE]: Ensure you provide 2 arguments " \
+                               "<directory of codebase> <filepath for requirements>"
+
     # Remove 1th element
     if len(sys.path) >= 3:
         sys.path = sys.path[2:]
@@ -112,13 +122,15 @@ def main():
     else:
         sys.path = []
 
-    assert len(sys.argv) == 3, "[USAGE]: Ensure you provide 2 arguments " \
-                               "<directory of codebase> <filepath for requirements>"
 
     if not os.path.isabs(sys.argv[1]):
         abs_path = os.path.abspath(sys.argv[1])
     else:
         abs_path = sys.argv[1]
+
+    # Loading mappings
+    with open("pip_import_names.json", 'r') as f:
+        mapping_dict = json.load(f)
 
     requirements_file = sys.argv[2]
     filenames = get_python_filenames(abs_path)
@@ -134,7 +146,7 @@ def main():
 
     import_mapping = analyzer.report()
 
-    generate_requirements_file(import_mapping, requirements_file, abs_path)
+    generate_requirements_file(import_mapping=import_mapping, dest_file=requirements_file, code_dir_abs_path=abs_path, mapping_dict=mapping_dict)
 
 
 """
