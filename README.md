@@ -1,4 +1,11 @@
-# PyRex
+# PyRex 
+
+```
+ ____  _  _  ____  ____  _  _ 
+(  _ \( \/ )(  _ \( ___)( \/ )
+ )___/ \  /  )   / )__)  )  ( 
+(__)   (__) (_)\_)(____)(_/\_)
+```
 
 [![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
 
